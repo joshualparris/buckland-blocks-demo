@@ -1,0 +1,46 @@
+name: Core repair browser playtest
+
+on:
+  push:
+    branches:
+      - test/core-repair-playtest
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Type check
+        run: npm run check
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Real browser playtest
+        run: xvfb-run -a npm run test:e2e
+
+      - name: Upload playtest evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buckland-blocks-playtest-evidence
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
